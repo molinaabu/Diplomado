@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administrador de Prompts - SPA</title>
+  <meta name="description" content="Una herramienta SPA moderna para la gestión y organización de prompts con base de datos en Google Sheets.">
+  <link rel="stylesheet" href="styles.css?v=1.2">
+</head>
+<body>
+
+  <!-- Cabecera de la Aplicación -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <!-- SVG Icon: Terminal/Sparkles -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 17 10 11 4 5"></polyline>
+          <line x1="12" y1="19" x2="20" y2="19"></line>
+        </svg>
+      </div>
+      <h1 class="brand-title">PromptManager</h1>
+    </div>
+
+    <div class="header-actions">
+      <!-- Estado de la Conexión -->
+      <div id="connectionStatus" class="connection-badge disconnected" title="Estado de la conexión con Google Sheets">
+        <span class="status-dot"></span>
+        <span id="connectionStatusText">Sin Configurar</span>
+      </div>
+
+      <!-- Configuración de API -->
+      <button id="btnOpenSettings" class="btn btn-icon" title="Configurar Google Sheets API" aria-label="Abrir configuración de API">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+
+      <!-- Alternador de Tema -->
+      <button id="themeToggle" class="btn btn-icon" title="Cambiar tema (Claro/Oscuro)" aria-label="Cambiar tema">
+        <!-- SVG Moon (se muestra en modo claro) -->
+        <svg id="iconMoon" class="theme-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+        <!-- SVG Sun (se muestra en modo oscuro, controlado por JS) -->
+        <svg id="iconSun" class="theme-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+      </button>
+
+      <!-- Botón Agregar Nuevo Prompt -->
+      <button id="btnOpenCreateModal" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Nuevo Prompt</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <!-- Tarjetas de Estadísticas -->
+    <section class="stats-grid" aria-label="Métricas rápidas">
+      <div class="stat-card">
+        <div>
+          <span class="stat-title">Total de Prompts</span>
+          <div id="statTotalPrompts" class="stat-value">-</div>
+        </div>
+        <span class="stat-desc">Almacenados en Google Sheets</span>
+      </div>
+
+      <div class="stat-card">
+        <div>
+          <span class="stat-title">Categorías Únicas</span>
+          <div id="statTotalCategories" class="stat-value">-</div>
+        </div>
+        <span class="stat-desc">Segmentación organizada</span>
+      </div>
+
+      <div class="stat-card" style="grid-column: span 1;">
+        <div>
+          <span class="stat-title">Última Sincronización</span>
+          <div id="statLastSync" class="stat-value" style="font-size: 1.25rem; height: 2.25rem; display: flex; align-items: center; margin: 0.5rem 0;">No sincronizado</div>
+        </div>
+        <span class="stat-desc">Actualización en tiempo real</span>
+      </div>
+    </section>
+
+    <!-- Barra de Búsqueda y Filtros de Categoría -->
+    <section class="control-bar" aria-label="Herramientas de filtrado y búsqueda">
+      <div class="search-filter-wrapper">
+        <div class="search-box">
+          <div class="search-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
+          <input type="text" id="searchInput" class="search-input" placeholder="Buscar por nombre, prompt o ejemplos..." aria-label="Buscar prompts">
+        </div>
+      </div>
+
+      <!-- Píldoras de categoría -->
+      <div class="categories-wrapper">
+        <span class="categories-label">Filtrar por Categoría:</span>
+        <div id="categoryPills" class="category-pills">
+          <button class="category-pill active" data-category="all">Todas</button>
+          <!-- Las categorías dinámicas se inyectarán aquí -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Rejilla de Prompts -->
+    <main id="promptsGrid" class="prompts-grid" aria-live="polite">
+      <!-- Los skeletons o tarjetas de prompts se inyectarán aquí por JavaScript -->
+    </main>
+
+  </div>
+
+  <!-- MODAL: Crear y Editar Prompt -->
+  <div id="promptModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="promptModalTitle">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 id="promptModalTitle" class="modal-title">Nuevo Prompt</h2>
+        <button id="btnClosePromptModal" class="btn-close" aria-label="Cerrar modal">&times;</button>
+      </div>
+      <form id="promptForm" novalidate>
+        <input type="hidden" id="formRowIndex" value="">
+        <div class="modal-body">
+          
+          <!-- Campo Categoría -->
+          <div class="form-group">
+            <label for="formCategoria" class="form-label">Categoría <span>*</span></label>
+            <input type="text" id="formCategoria" class="form-control" placeholder="Ej: Redacción, Desarrollo, Marketing..." required list="categorySuggestions">
+            <datalist id="categorySuggestions">
+              <!-- Sugerencias de categorías existentes -->
+            </datalist>
+            <span class="form-help">Escribe una nueva categoría o selecciona de las existentes.</span>
+          </div>
+
+          <!-- Campo Nombre Prompt -->
+          <div class="form-group">
+            <label for="formNombre" class="form-label">Nombre del Prompt <span>*</span></label>
+            <input type="text" id="formNombre" class="form-control" placeholder="Ej: Corrector de Estilo Científico" required>
+            <span class="form-help">Un nombre descriptivo corto.</span>
+          </div>
+
+          <!-- Campo Prompt -->
+          <div class="form-group">
+            <label for="formPrompt" class="form-label">Prompt <span>*</span></label>
+            <textarea id="formPrompt" class="form-control" placeholder="Escribe el cuerpo del prompt aquí..." required></textarea>
+            <span class="form-help">Instrucción detallada para la IA.</span>
+          </div>
+
+          <!-- Campo Ejemplos -->
+          <div class="form-group">
+            <label for="formEjemplos" class="form-label">Ejemplos</label>
+            <textarea id="formEjemplos" class="form-control" placeholder="Ej: Entrada: [texto] -> Salida: [texto corregido]"></textarea>
+            <span class="form-help">Ejemplos prácticos de uso o formato esperado (opcional).</span>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btnCancelPromptModal" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" id="btnSavePrompt" class="btn btn-primary">Guardar Prompt</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Ver Detalle del Prompt -->
+  <div id="detailModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="detailModalTitle">
+    <div class="modal-container" style="max-width: 700px;">
+      <div class="modal-header">
+        <div>
+          <span id="detailCategory" class="card-category-badge" style="margin-bottom: 0.5rem; display: inline-block;">CATEGORÍA</span>
+          <span id="detailDate" class="card-date" style="margin-left: 0.5rem; display: inline-block; vertical-align: middle;"></span>
+          <h2 id="detailModalTitle" class="modal-title">Título del Prompt</h2>
+        </div>
+        <button id="btnCloseDetailModal" class="btn-close" aria-label="Cerrar modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Sección del Prompt -->
+        <div class="detail-section">
+          <div class="detail-label-wrapper">
+            <span class="card-section-label">Prompt</span>
+            <button id="btnCopyPrompt" class="btn-copy-small">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copiar Prompt</span>
+            </button>
+          </div>
+          <pre id="detailPromptContent" class="detail-content-box"></pre>
+        </div>
+
+        <!-- Sección de Ejemplos -->
+        <div class="detail-section" id="detailExamplesSection">
+          <div class="detail-label-wrapper">
+            <span class="card-section-label">Ejemplos de uso</span>
+            <button id="btnCopyExamples" class="btn-copy-small">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copiar Ejemplos</span>
+            </button>
+          </div>
+          <pre id="detailExamplesContent" class="detail-content-box"></pre>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button id="btnEditFromDetail" class="btn btn-secondary">Editar</button>
+        <button id="btnCloseDetail" class="btn btn-primary">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Ajustes de Conexión de API (Google Sheets) -->
+  <div id="settingsModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="settingsModalTitle">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 id="settingsModalTitle" class="modal-title">Configuración de la Base de Datos</h2>
+        <button id="btnCloseSettingsModal" class="btn-close" aria-label="Cerrar modal">&times;</button>
+      </div>
+      <form id="settingsForm" novalidate>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="settingsApiUrl" class="form-label">Google Apps Script Web App URL <span>*</span></label>
+            <input type="url" id="settingsApiUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec" required>
+            <span class="form-help">Pega el URL generado al implementar tu código como "Aplicación web" en Google Apps Script.</span>
+          </div>
+
+          <div style="background-color: var(--color-warning-light); border-left: 4px solid var(--color-warning); padding: 1rem; border-radius: var(--border-radius-sm); font-size: 0.85rem; color: var(--text-secondary);">
+            <strong>¿Cómo obtener este URL?</strong>
+            <ol style="margin-left: 1.25rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
+              <li>Abre tu hoja de cálculo de Google.</li>
+              <li>Ve a <strong>Extensiones -> Apps Script</strong> y pega el código provisto.</li>
+              <li>Presiona <strong>Implementar -> Nueva implementación</strong>.</li>
+              <li>Elige <strong>Aplicación web</strong>, ejecuta como "Tú" y concede acceso a "Cualquiera".</li>
+              <li>Copia el enlace resultante y pégalo aquí.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btnCancelSettingsModal" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" id="btnSaveSettings" class="btn btn-primary">Guardar y Conectar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Contenedor para notificaciones Toast -->
+  <div id="toastContainer" class="toast-container" aria-live="assertive"></div>
+
+  <!-- Lógica JavaScript Principal -->
+  <script src="app.js"></script>
+</body>
+</html>
